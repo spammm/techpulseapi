@@ -4,18 +4,17 @@ import {
   Post as PostMethod,
   Body,
   Param,
-  Res,
   Delete,
   UploadedFile,
   UseInterceptors,
   Put,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -23,6 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as sharp from 'sharp';
 import * as fs from 'fs/promises';
 import { Post } from './post.entity';
+import { RequestWithUser } from '../types/request-with-user.interface';
 
 @Controller('posts')
 @UseGuards(AuthGuard('jwt'))
@@ -30,8 +30,11 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @PostMethod()
-  async create(@Body() createPostDto: CreatePostDto) {
-    return this.postsService.create(createPostDto);
+  async create(
+    @Body() createPostDto: CreatePostDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.postsService.create(createPostDto, req.user);
   }
 
   @Put(':id')
@@ -43,7 +46,7 @@ export class PostsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: 'uploads/tmp',
+        destination: join(__dirname, '..', '..', '..', 'uploads', 'tmp'),
         filename: (req, file, cb) => {
           const uniqueSuffix = `${uuidv4()}${extname(file.originalname)}`;
           cb(null, uniqueSuffix);
@@ -67,22 +70,18 @@ export class PostsController {
       __dirname,
       '..',
       '..',
+      '..',
       'uploads',
       'tmp',
       file.filename,
     );
 
     const newFileName = `${uuidv4()}.webp`;
-    const outputPath = join(
-      __dirname,
-      '..',
-      '..',
-      'uploads',
-      'images',
-      newFileName,
-    );
+    const outputDir = join(__dirname, '..', '..', '..', 'uploads', 'images');
+    const outputPath = join(outputDir, newFileName);
 
     try {
+      await fs.mkdir(outputDir, { recursive: true });
       const image = sharp(tmpPath);
       const metadata = await image.metadata();
 
@@ -119,10 +118,19 @@ export class PostsController {
   }
 
   @Get()
-  async findAll(@Res() res: Response) {
-    const [data, count] = await this.postsService.findAllWithCount();
-    res.set('X-Total-Count', count.toString());
-    res.json(data);
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ): Promise<{ posts: Post[]; totalPages: number }> {
+    const [posts, count] = await this.postsService.findAllWithCount();
+
+    const totalPages = Math.ceil(count / limit);
+    const paginatedPosts = posts.slice((page - 1) * limit, page * limit);
+
+    return {
+      posts: paginatedPosts,
+      totalPages,
+    };
   }
 
   @Get('find')
@@ -130,7 +138,6 @@ export class PostsController {
     @Query('fieldName') fieldName: keyof Post,
     @Query('fieldValue') fieldValue: string,
   ) {
-    console.log('COntroller');
     return this.postsService.findOneByField(fieldName, fieldValue);
   }
 

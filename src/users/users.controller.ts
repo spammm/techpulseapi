@@ -1,19 +1,47 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Patch,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { RolesGuard } from '../auth/roles.guard';
 import { User } from './user.entity';
 import { Roles } from '../auth/roles.decorator';
+import { RequestWithUser } from '../types/request-with-user.interface';
+import { AuthService } from '../auth/auth.service';
+import { RegisterDto } from '../auth/dto/register.dto';
 
 @Controller('users')
 @UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  async getCurrentUser(@Req() req: RequestWithUser): Promise<User> {
+    return this.usersService.findById(req.user.id);
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async getUserById(@Param('id') id: string): Promise<User> {
+    return this.usersService.findById(+id);
   }
 
   @Get()
@@ -21,5 +49,21 @@ export class UsersController {
   @Roles('admin', 'manager')
   async findAll(): Promise<User[]> {
     return this.usersService.findAll();
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.authService.updateUser(+id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async deleteUser(@Param('id') id: string): Promise<void> {
+    return this.usersService.remove(+id);
   }
 }

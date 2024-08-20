@@ -1,6 +1,6 @@
-export class CreateUserDto {
-  username: string;
-  password: string;
+export class UpdateUserDto {
+  username?: string;
+  password?: string;
   role?: 'admin' | 'writer' | 'manager' | 'client' | 'user';
   avatar?: string;
   email?: string;

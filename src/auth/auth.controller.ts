@@ -26,6 +26,14 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  @Post('refresh-token')
+  async refreshToken(@Body() body: { refreshToken: string }) {
+    const newAccessToken = await this.authService.refreshAccessToken(
+      body.refreshToken,
+    );
+    return { accessToken: newAccessToken };
+  }
+
   @Post('register')
   @UseGuards(RolesGuard)
   @SetMetadata('roles', ['admin', 'manager'])

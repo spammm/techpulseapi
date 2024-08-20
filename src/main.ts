@@ -8,7 +8,7 @@ async function bootstrap() {
   app.enableCors({
     exposedHeaders: ['X-Total-Count'],
   });
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
     prefix: '/uploads/',
   });
   await app.listen(9000);

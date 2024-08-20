@@ -2,9 +2,13 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  ManyToOne,
   BeforeInsert,
   BeforeUpdate,
+  OneToMany,
 } from 'typeorm';
+import { User } from '../users/user.entity';
+import { Comment } from '../comments/comment.entity';
 
 @Entity()
 export class Post {
@@ -49,6 +53,18 @@ export class Post {
 
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
+
+  @ManyToOne(() => User, (user) => user.posts)
+  owner: User;
+
+  @Column({ default: false })
+  showAuthorName: boolean;
+
+  @Column({ nullable: true })
+  authorName: string;
+
+  @OneToMany(() => Comment, (comment) => comment.post)
+  comments: Comment[];
 
   @BeforeInsert()
   setCreationDates() {

@@ -4,19 +4,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
-  ) {
-    //console.log('PostsRepository:', this.postsRepository);
-  }
+  ) {}
 
-  async create(createPostDto: CreatePostDto): Promise<Post> {
-    console.log('DTO received in create:', createPostDto);
-
+  async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
     let url = slugify(createPostDto.title);
 
     let existingPost = await this.postsRepository.findOne({ where: { url } });
@@ -28,10 +25,17 @@ export class PostsService {
     const post = this.postsRepository.create({
       ...createPostDto,
       url,
+      owner: user,
+      authorName: createPostDto.authorName || user.publicAlias || '',
     });
 
-    console.log('Entity before saving:', post);
-    return await this.postsRepository.save(post);
+    const insertResult = await this.postsRepository.insert(post);
+
+    const savedPost = await this.postsRepository.findOne({
+      where: { id: insertResult.identifiers[0].id },
+    });
+
+    return savedPost;
   }
 
   async delete(id: string): Promise<void> {
@@ -42,13 +46,15 @@ export class PostsService {
   }
 
   async update(id: string, updatePostDto: CreatePostDto): Promise<Post> {
-    await this.postsRepository.update(id, updatePostDto);
-    const updatedPost = await this.postsRepository.findOneBy({
-      id: parseInt(id, 10),
-    });
-    if (!updatedPost) {
+    const post = await this.postsRepository.findOneBy({ id: parseInt(id, 10) });
+
+    if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
+
+    Object.assign(post, updatePostDto);
+    const updatedPost = await this.postsRepository.save(post);
+
     return updatedPost;
   }
 

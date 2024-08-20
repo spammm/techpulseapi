@@ -4,8 +4,9 @@ export class CreatePostDto {
   keywords?: string;
   content: string;
   tags: string[];
-  sources: { name: string; link: string }[];
   imageLinks: { src: string; alt: string }[];
-  image: { src: string; alt: string };
+  sources: { name: string; link: string }[];
   published: boolean;
+  showAuthorName?: boolean;
+  authorName?: string;
 }
