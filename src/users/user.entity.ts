@@ -1,6 +1,13 @@
 import { Comment } from '../comments/comment.entity';
 import { Post } from '../posts/post.entity';
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -37,8 +44,17 @@ export class User {
   @Column({ nullable: true })
   about?: string;
 
+  @Column({ default: false })
+  disable?: boolean;
+
   @Column('json', { nullable: true })
   contacts?: { name: string; value: string }[];
+
+  @CreateDateColumn({ type: 'datetime' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'datetime' })
+  updatedAt: Date;
 
   @OneToMany(() => Post, (post) => post.owner)
   posts: Post[];

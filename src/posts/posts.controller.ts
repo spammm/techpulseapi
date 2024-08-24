@@ -11,25 +11,27 @@ import {
   Query,
   UseGuards,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RequestWithUser } from '../types/request-with-user.interface';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import * as sharp from 'sharp';
 import * as fs from 'fs/promises';
 import { Post } from './post.entity';
-import { RequestWithUser } from '../types/request-with-user.interface';
+import { Roles } from 'src/auth/roles.decorator';
 
 @Controller('posts')
-@UseGuards(AuthGuard('jwt'))
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @PostMethod()
+  @UseGuards(AuthGuard('jwt'))
   async create(
     @Body() createPostDto: CreatePostDto,
     @Req() req: RequestWithUser,
@@ -38,11 +40,111 @@ export class PostsController {
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
   async update(@Param('id') id: string, @Body() updatePostDto: CreatePostDto) {
     return this.postsService.update(id, updatePostDto);
   }
 
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async delete(@Param('id') id: string) {
+    return this.postsService.delete(id);
+  }
+
+  @Get('url/:url')
+  async getPostByUrl(@Param('url') url: string): Promise<Post> {
+    return this.postsService.getPostByUrl(url);
+  }
+
+  @Get('adjacent/:id')
+  async getAdjacentPosts(@Param('id') id: string) {
+    const postId = parseInt(id, 10);
+    return this.postsService.getAdjacentPosts(postId);
+  }
+
+  @Get('published')
+  async getPublishedPosts(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('tags') tags?: string[],
+    @Query('author') author?: string,
+  ): Promise<{ posts: Post[]; totalPages: number }> {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    return this.postsService.fetchPosts(
+      pageNumber,
+      limitNumber,
+      search,
+      tags,
+      author,
+      'published',
+    );
+  }
+
+  @Get()
+  @Roles('admin', 'manager', 'writer')
+  async getAllPosts(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('tags') tags?: string[],
+    @Query('author') author?: string,
+    @Query('published') published?: 'published' | 'unpublished',
+  ): Promise<{ posts: Post[]; totalPages: number }> {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    return this.postsService.fetchPosts(
+      pageNumber,
+      limitNumber,
+      search,
+      tags,
+      author,
+      published,
+    );
+  }
+
+  @Get('find')
+  async findOneByField(
+    @Query('fieldName') fieldName: keyof Post,
+    @Query('fieldValue') fieldValue: string,
+  ) {
+    return this.postsService.findOneByField(fieldName, fieldValue);
+  }
+
+  @Get('popular')
+  async getPopularPosts(): Promise<Post[]> {
+    return this.postsService.getPopularPosts();
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.postsService.findOne(id);
+  }
+
+  // @Get()
+  // async findAll(
+  //   @Query('page') page = 1,
+  //   @Query('limit') limit = 10,
+  // ): Promise<{ posts: Post[]; totalPages: number }> {
+  //   const [posts, count] = await this.postsService.findAllWithCount();
+
+  //   const totalPages = Math.ceil(count / limit);
+  //   const paginatedPosts = posts.slice((page - 1) * limit, page * limit);
+
+  //   return {
+  //     posts: paginatedPosts,
+  //     totalPages,
+  //   };
+  // }
+
+  @Patch('increment-view/:id')
+  async incrementViewCount(@Param('id') id: string): Promise<void> {
+    await this.postsService.incrementViewCount(parseInt(id, 10));
+  }
+
   @PostMethod('upload')
+  @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -110,39 +212,5 @@ export class PostsController {
       console.error('Error processing image:', error);
       throw new Error('Error processing image');
     }
-  }
-
-  @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.postsService.delete(id);
-  }
-
-  @Get()
-  async findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-  ): Promise<{ posts: Post[]; totalPages: number }> {
-    const [posts, count] = await this.postsService.findAllWithCount();
-
-    const totalPages = Math.ceil(count / limit);
-    const paginatedPosts = posts.slice((page - 1) * limit, page * limit);
-
-    return {
-      posts: paginatedPosts,
-      totalPages,
-    };
-  }
-
-  @Get('find')
-  async findOneByField(
-    @Query('fieldName') fieldName: keyof Post,
-    @Query('fieldValue') fieldValue: string,
-  ) {
-    return this.postsService.findOneByField(fieldName, fieldValue);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.postsService.findOne(id);
   }
 }

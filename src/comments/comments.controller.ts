@@ -6,18 +6,29 @@ import {
   Param,
   Delete,
   Put,
+  Req,
+  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { RequestWithUser } from '../types/request-with-user.interface';
+import { Comment } from './comment.entity'; // Assuming you have a Comment entity
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Post()
-  async create(@Body() createCommentDto: CreateCommentDto) {
-    return this.commentsService.create(createCommentDto);
+  @UseGuards(AuthGuard('jwt'))
+  async addComment(
+    @Body() createCommentDto: CreateCommentDto,
+    @Req() req: RequestWithUser,
+  ): Promise<Comment> {
+    const user = req.user;
+    return this.commentsService.createComment(createCommentDto, user);
   }
 
   @Get()
@@ -26,30 +37,32 @@ export class CommentsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: number) {
+  async findOne(@Param('id', new ParseIntPipe()) id: number) {
     return this.commentsService.findOne(id);
   }
 
   @Put(':id')
   async update(
-    @Param('id') id: number,
+    @Param('id', new ParseIntPipe()) id: number,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
     return this.commentsService.update(id, updateCommentDto);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id', new ParseIntPipe()) id: number) {
     return this.commentsService.remove(id);
   }
 
   @Get('post/:postId')
-  async findAllByPost(@Param('postId') postId: number) {
+  async getCommentsByPostId(
+    @Param('postId', new ParseIntPipe()) postId: number,
+  ): Promise<Comment[]> {
     return this.commentsService.findAllByPost(postId);
   }
 
   @Get('user/:userId')
-  async findAllByUser(@Param('userId') userId: number) {
+  async findAllByUser(@Param('userId', new ParseIntPipe()) userId: number) {
     return this.commentsService.findAllByUser(userId);
   }
 

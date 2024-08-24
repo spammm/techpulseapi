@@ -45,6 +45,9 @@ export class Post {
   @Column()
   url: string;
 
+  @Column({ default: 0 })
+  viewCount: number;
+
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
@@ -66,14 +69,34 @@ export class Post {
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
+  private originalPublished: boolean;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  normalizeTags() {
+    if (this.tags && this.tags.length > 0) {
+      this.tags = this.tags.map((tag) =>
+        tag.toLowerCase().replace(/\s+/g, '_'),
+      );
+    }
+  }
+
   @BeforeInsert()
   setCreationDates() {
     this.createdAt = new Date();
     this.updatedAt = new Date();
+    if (this.published) {
+      this.publishedAt = new Date();
+    }
+    this.originalPublished = this.published;
   }
 
   @BeforeUpdate()
   updateTimestamp() {
     this.updatedAt = new Date();
+    if (this.published && !this.originalPublished) {
+      this.publishedAt = new Date();
+    }
+    this.originalPublished = this.published;
   }
 }

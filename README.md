@@ -44,6 +44,8 @@ $ npm run test:cov
 
 ## Миграция
 
+Добавить в src/data-source.ts новые сущности если они есть, после этого запустить команды
+
 ```
 npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli migration:generate -d src/data-source.ts src/migrations/AddKeywordsColumnToPost
 ```

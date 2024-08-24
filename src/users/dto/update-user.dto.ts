@@ -10,4 +10,5 @@ export class UpdateUserDto {
   note?: string;
   about?: string;
   contacts?: { name: string; value: string }[];
+  disable?: boolean;
 }
