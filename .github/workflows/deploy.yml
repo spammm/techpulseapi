@@ -18,9 +18,9 @@ jobs:
 
       - name: Deploy to VPS
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          SERVER_HOST: ${{ secrets.VPS_HOST }}
-          SERVER_USER: ${{ secrets.VPS_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.VDS_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.VDS_HOST }}
+          SERVER_USER: ${{ secrets.VDS_USER }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
