@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as sharp from 'sharp';
 import * as fs from 'fs/promises';
 import { Post } from './post.entity';
-import { Roles } from 'src/auth/roles.decorator';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('posts')
 export class PostsController {
