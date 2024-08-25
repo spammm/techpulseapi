@@ -30,7 +30,7 @@ const dataSourceOptions: DataSourceOptions = isProduction
       ssl: process.env.DB_SSL === 'true',
       entities: entities,
       migrations: [migrationsPath],
-      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
+      synchronize: process.env.TYPEORM_SYNC === 'true',
       logging: process.env.TYPEORM_LOGGING === 'true',
     }
   : {
@@ -38,7 +38,7 @@ const dataSourceOptions: DataSourceOptions = isProduction
       database: process.env.DB_DATABASE,
       entities: entities,
       migrations: [migrationsPath],
-      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
+      synchronize: process.env.TYPEORM_SYNC === 'true',
       logging: process.env.TYPEORM_LOGGING === 'true',
     };
 
