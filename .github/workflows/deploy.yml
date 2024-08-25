@@ -25,4 +25,10 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "cd /var/www/techpulse-api && git pull origin main && npm install && pm2 restart techpulse-api || pm2 start npm --name 'techpulse-api' -- start"
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "
+            cd /var/www/techpulse-api
+            git pull origin main
+            npm install
+            npm run build  # Собираем проект
+            pm2 restart techpulse-api || pm2 start npm --name 'techpulse-api' -- start
+          "
