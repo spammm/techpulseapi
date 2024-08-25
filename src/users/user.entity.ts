@@ -50,10 +50,10 @@ export class User {
   @Column('json', { nullable: true })
   contacts?: { name: string; value: string }[];
 
-  @CreateDateColumn({ type: 'datetime' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'datetime' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 
   @OneToMany(() => Post, (post) => post.owner)
