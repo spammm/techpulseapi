@@ -17,13 +17,13 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<User> {
-    const { password } = registerDto;
+    const { password, role } = registerDto;
     const hashedPassword = await this.hashPassword(password);
 
     const newUser = await this.usersService.create({
       ...registerDto,
       password: hashedPassword,
-      role: 'user',
+      role: role || 'user',
     });
 
     return newUser;

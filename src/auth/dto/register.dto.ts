@@ -1,5 +1,5 @@
 export class RegisterDto {
   username: string;
   password: string;
-  role: string;
+  role: 'user' | 'admin' | 'writer' | 'manager' | 'client';
 }
