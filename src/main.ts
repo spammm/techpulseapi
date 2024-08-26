@@ -11,7 +11,8 @@ async function bootstrap() {
 
   app.enableCors({
     exposedHeaders: ['X-Total-Count'],
-    origin: [process.env.CORS_CLIENT_URL, process.env.CORS_ADMIN_URL],
+    // origin: [process.env.CORS_CLIENT_URL, process.env.CORS_ADMIN_URL],
+    origin: ['*'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
