@@ -5,12 +5,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
+    private readonly httpService: HttpService,
   ) {}
 
   async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
@@ -30,10 +33,33 @@ export class PostsService {
     });
 
     const insertResult = await this.postsRepository.insert(post);
-
-    return await this.postsRepository.findOne({
+    const createdPost = await this.postsRepository.findOne({
       where: { id: insertResult.identifiers[0].id },
     });
+
+    if (createdPost?.published) {
+      await this.triggerSitemapUpdate();
+    }
+
+    return createdPost;
+  }
+
+  private async triggerSitemapUpdate() {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(
+          `${process.env.CLIENT_URL}/api/clear-sitemap-cache`,
+          {
+            headers: {
+              'x-sitemap-secret': process.env.SITEMAP_SECRET,
+            },
+          },
+        ),
+      );
+      console.log('Sitemap cache cleared successfully', response.data);
+    } catch (error) {
+      console.error('Failed to clear sitemap cache', error);
+    }
   }
 
   async delete(id: string): Promise<void> {
@@ -50,8 +76,16 @@ export class PostsService {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
 
+    const wasPublished = post.published;
+
     Object.assign(post, updatePostDto);
-    return await this.postsRepository.save(post);
+    const updatedPost = await this.postsRepository.save(post);
+
+    if (!wasPublished && updatedPost.published) {
+      await this.triggerSitemapUpdate();
+    }
+
+    return updatedPost;
   }
 
   async findAllWithCount(): Promise<[Post[], number]> {

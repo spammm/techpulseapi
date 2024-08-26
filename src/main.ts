@@ -11,7 +11,7 @@ async function bootstrap() {
 
   app.enableCors({
     exposedHeaders: ['X-Total-Count'],
-    origin: [process.env.CORS_CLIENT_URL, process.env.CORS_ADMIN_URL],
+    origin: [process.env.CLIENT_URL, process.env.ADMIN_URL],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
@@ -24,7 +24,7 @@ async function bootstrap() {
         'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       );
       res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.header('Access-Control-Allow-Origin', process.env.CORS_CLIENT_URL);
+      res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
       res.sendStatus(204);
     } else {
       next();
