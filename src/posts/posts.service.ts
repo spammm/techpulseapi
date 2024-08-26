@@ -1,5 +1,5 @@
 import { slugify } from 'transliteration';
-import { Repository, MoreThan, LessThan, Brackets, DataSource } from 'typeorm';
+import { Repository, MoreThan, LessThan, Brackets } from 'typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './post.entity';
@@ -11,7 +11,6 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
-    private readonly dataSource: DataSource,
   ) {}
 
   async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
@@ -108,18 +107,9 @@ export class PostsService {
     }
 
     if (tags && tags.length > 0) {
-      const isSQLite = this.dataSource.options.type === 'sqlite';
-      if (isSQLite) {
-        query.andWhere(
-          new Brackets((qb) => {
-            tags.forEach((tag) => {
-              qb.orWhere('post.tags LIKE :tag', { tag: `%${tag}%` });
-            });
-          }),
-        );
-      } else {
-        query.andWhere('post.tags && ARRAY[:...tags]', { tags });
-      }
+      query.andWhere("string_to_array(post.tags, ',') && ARRAY[:...tags]", {
+        tags,
+      });
     }
 
     if (author) {

@@ -1,11 +1,14 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import * as dotenv from 'dotenv';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
 import { CreateAdminService } from './create-admin.service';
+
+dotenv.config();
 
 @Module({
   imports: [
@@ -13,7 +16,7 @@ import { CreateAdminService } from './create-admin.service';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default_secret_key',
-      signOptions: { expiresIn: '60m' },
+      signOptions: { expiresIn: '20h' },
     }),
   ],
   providers: [AuthService, JwtStrategy, CreateAdminService],
