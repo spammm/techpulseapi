@@ -12,27 +12,18 @@ import { CommentsModule } from './comments/comments.module';
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: () => {
-        if (process.env.NODE_ENV === 'production') {
-          return {
-            type: 'postgres',
-            host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT, 10) || 5432,
-            username: process.env.DB_USERNAME || 'your_username',
-            password: process.env.DB_PASSWORD || 'your_password',
-            database: process.env.DB_DATABASE || 'your_database',
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: process.env.TYPEORM_SYNC === 'true',
-            logging: process.env.TYPEORM_LOGGING === 'true',
-            ssl: process.env.DB_SSL === 'true',
-          };
-        } else {
-          return {
-            type: 'sqlite',
-            database: 'database.sqlite',
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: true,
-          };
-        }
+        return {
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT, 10) || 5432,
+          username: process.env.DB_USERNAME || 'your_username',
+          password: process.env.DB_PASSWORD || 'your_password',
+          database: process.env.DB_DATABASE || 'your_database',
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: process.env.TYPEORM_SYNC === 'true',
+          logging: process.env.TYPEORM_LOGGING === 'true',
+          ssl: process.env.DB_SSL === 'true',
+        };
       },
     }),
     UsersModule,
