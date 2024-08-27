@@ -141,9 +141,15 @@ export class PostsService {
     }
 
     if (tags && tags.length > 0) {
-      query.andWhere("string_to_array(post.tags, ',') && ARRAY[:...tags]", {
-        tags,
-      });
+      query.andWhere(
+        new Brackets((qb) => {
+          tags.forEach((tag) => {
+            qb.orWhere('post.tags ILIKE :tag', {
+              tag: `%${tag}%`,
+            });
+          });
+        }),
+      );
     }
 
     if (author) {
