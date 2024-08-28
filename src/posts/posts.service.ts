@@ -65,6 +65,14 @@ export class PostsService {
         ),
       );
       console.log('Sitemap cache cleared successfully', response.data);
+
+      if (!process.env.CLIENT_URL.includes('localhost')) {
+        const yandexPingUrl = `https://webmaster.yandex.ru/ping?sitemap=${process.env.CLIENT_URL}/sitemap.xml`;
+        const yandexPingResponse = await lastValueFrom(
+          this.httpService.get(yandexPingUrl),
+        );
+        console.log('Yandex ping successful', yandexPingResponse.data);
+      }
     } catch (error) {
       console.error(
         'Failed to clear sitemap cache or send index request',
