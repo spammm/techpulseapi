@@ -2,18 +2,21 @@ import { slugify } from 'transliteration';
 import { Repository, MoreThan, LessThan, Brackets } from 'typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { lastValueFrom } from 'rxjs';
 import { Post } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
+import { GoogleIndexingService } from '../services/google-indexing.service';
 
+const clientSiteUrl = process.env.CLIENT_URL;
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
     private readonly httpService: HttpService,
+    private readonly googleIndexingService: GoogleIndexingService,
   ) {}
 
   async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
@@ -39,6 +42,11 @@ export class PostsService {
 
     if (createdPost?.published) {
       await this.triggerSitemapUpdate();
+      if (process.env.GOOGLE_PRIVATE_KEY) {
+        await this.googleIndexingService.requestGoogleIndexing(
+          `${clientSiteUrl}/news/${post.url}`,
+        );
+      }
     }
 
     return createdPost;
@@ -58,7 +66,10 @@ export class PostsService {
       );
       console.log('Sitemap cache cleared successfully', response.data);
     } catch (error) {
-      console.error('Failed to clear sitemap cache', error);
+      console.error(
+        'Failed to clear sitemap cache or send index request',
+        error,
+      );
     }
   }
 
@@ -80,9 +91,24 @@ export class PostsService {
 
     Object.assign(post, updatePostDto);
     const updatedPost = await this.postsRepository.save(post);
+    const updatedPostUrl = `${clientSiteUrl}/news/${post.url}`;
 
     if (!wasPublished && updatedPost.published) {
       await this.triggerSitemapUpdate();
+      if (process.env.GOOGLE_PRIVATE_KEY) {
+        await this.googleIndexingService.requestGoogleIndexing(
+          updatedPostUrl,
+          'URL_UPDATED',
+        );
+      }
+    } else if (wasPublished && !updatedPost.published) {
+      await this.triggerSitemapUpdate();
+      if (process.env.GOOGLE_PRIVATE_KEY) {
+        await this.googleIndexingService.requestGoogleIndexing(
+          updatedPostUrl,
+          'URL_DELETED',
+        );
+      }
     }
 
     return updatedPost;
