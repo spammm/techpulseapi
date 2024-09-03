@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Comment } from '../comments/comment.entity';
+import { PostImage } from '../post-images/post-image.entity';
 
 @Entity()
 export class Post {
@@ -30,16 +31,28 @@ export class Post {
   @Column('simple-json')
   tags: string[];
 
-  @Column('simple-json')
-  imageLinks: { src: string; alt: string }[];
+  @OneToMany(() => PostImage, (image) => image.post)
+  imageLinksEntity: PostImage[];
+
+  @Column('simple-json', { nullable: true })
+  imageLinks: {
+    src: string;
+    alt: string;
+  }[];
 
   @Column({ type: 'simple-json', nullable: true })
-  image: { src: string; alt: string };
+  image: {
+    id?: number;
+    src: string;
+    alt: string;
+    sourceUrl?: string;
+    source?: string;
+  };
 
   @Column('simple-json')
   sources: { name: string; link: string }[];
 
-  @Column()
+  @Column({ default: false })
   published: boolean;
 
   @Column()

@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './auth/roles.guard';
 import { TagsModule } from './tags/tags.module';
 import { CommentsModule } from './comments/comments.module';
+import { PostImageModule } from './post-images/post-image.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { CommentsModule } from './comments/comments.module';
     PostsModule,
     TagsModule,
     CommentsModule,
+    PostImageModule,
   ],
   providers: [
     {
