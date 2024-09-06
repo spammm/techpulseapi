@@ -14,4 +14,5 @@ export class CreatePostDto {
   published: boolean;
   showAuthorName?: boolean;
   authorName?: string;
+  telegramMessageId?: number;
 }

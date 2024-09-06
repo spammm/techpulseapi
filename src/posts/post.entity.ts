@@ -79,6 +79,9 @@ export class Post {
   @Column({ nullable: true })
   authorName: string;
 
+  @Column({ nullable: true })
+  telegramMessageId?: number;
+
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 

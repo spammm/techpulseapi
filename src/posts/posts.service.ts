@@ -8,8 +8,10 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
 import { HttpService } from '@nestjs/axios';
 import { GoogleIndexingService } from '../services/google-indexing.service';
+import { TelegramService } from 'src/services/telegram-service';
 
 const clientSiteUrl = process.env.CLIENT_URL;
+const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 @Injectable()
 export class PostsService {
   constructor(
@@ -17,6 +19,7 @@ export class PostsService {
     private readonly postsRepository: Repository<Post>,
     private readonly httpService: HttpService,
     private readonly googleIndexingService: GoogleIndexingService,
+    private readonly telegramService: TelegramService,
   ) {}
 
   async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
@@ -39,15 +42,6 @@ export class PostsService {
     const createdPost = await this.postsRepository.findOne({
       where: { id: insertResult.identifiers[0].id },
     });
-
-    if (createdPost?.published) {
-      await this.triggerSitemapUpdate();
-      if (process.env.GOOGLE_PRIVATE_KEY) {
-        await this.googleIndexingService.requestGoogleIndexing(
-          `${clientSiteUrl}/news/${post.url}`,
-        );
-      }
-    }
 
     return createdPost;
   }
@@ -109,12 +103,29 @@ export class PostsService {
           'URL_UPDATED',
         );
       }
+      await this.triggerSitemapUpdate();
+      //telegram
+      if (telegramChatId !== undefined) {
+        const message = `<b>${updatedPost.title}</b>\n\n${updatedPost.subtitle || ''}\n\nЧитать полностью:\n\n${clientSiteUrl}/news/${updatedPost.url}`;
+        const messageId =
+          await this.telegramService.sendMessageToChannel(message);
+
+        Object.assign(updatedPost, updatePostDto);
+        updatedPost.telegramMessageId = messageId;
+        await this.postsRepository.save(updatedPost);
+      }
     } else if (wasPublished && !updatedPost.published) {
       await this.triggerSitemapUpdate();
       if (process.env.GOOGLE_PRIVATE_KEY) {
         await this.googleIndexingService.requestGoogleIndexing(
           updatedPostUrl,
           'URL_DELETED',
+        );
+      }
+      //teleram
+      if (telegramChatId !== undefined && updatedPost?.telegramMessageId) {
+        await this.telegramService.deleteMessageFromChannel(
+          updatedPost.telegramMessageId,
         );
       }
     }
