@@ -169,7 +169,9 @@ export class PostsService {
         new Brackets((qb) => {
           qb.where('post.title LIKE :search', {
             search: `%${search}%`,
-          }).orWhere('post.subtitle LIKE :search', { search: `%${search}%` });
+          })
+            .orWhere('post.subtitle LIKE :search', { search: `%${search}%` })
+            .orWhere('post.content LIKE :search', { search: `%${search}%` });
         }),
       );
     }
@@ -224,7 +226,7 @@ export class PostsService {
       console.error('Post not found for URL:', url);
       throw new NotFoundException('Post not found');
     }
-    post.viewCount++;
+    //post.viewCount++;
     await this.postsRepository.save(post);
     return post;
   }
@@ -268,7 +270,6 @@ export class PostsService {
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);
     }
-
     post.viewCount += 1;
     await this.postsRepository.save(post);
   }
