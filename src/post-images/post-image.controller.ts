@@ -126,7 +126,7 @@ export class PostImageController {
       return this.imageService.create({
         src: `/${relativePath.replace(/\\/g, '/')}`,
         smallSrc: `/${smallRelativePath.replace(/\\/g, '/')}`,
-        alt: newFileName,
+        alt: file.originalname,
         width: metadata.width,
         height: metadata.height,
         smallWidth: smallMetadata.width,
