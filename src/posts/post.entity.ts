@@ -47,6 +47,8 @@ export class Post {
     alt: string;
     sourceUrl?: string;
     source?: string;
+    width?: number;
+    hight?: number;
   };
 
   @Column('simple-json')

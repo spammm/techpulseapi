@@ -9,6 +9,8 @@ export class CreatePostDto {
     alt: string;
     source?: string;
     sourceUrl?: string;
+    width?: number;
+    hight?: number;
   }[];
   sources: { name: string; link: string }[];
   published: boolean;

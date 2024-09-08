@@ -106,7 +106,7 @@ export class PostsService {
       await this.triggerSitemapUpdate();
       //telegram
       if (telegramChatId !== undefined) {
-        const message = `<b>${updatedPost.title}</b>\n\n${updatedPost.subtitle || ''}\n\nЧитать полностью:\n\n${clientSiteUrl}/news/${updatedPost.url}`;
+        const message = `<b>${updatedPost.title}</b>\n${updatedPost.subtitle || ''}\n\nЧитать полностью:\n${clientSiteUrl}/news/${updatedPost.url}`;
         const messageId =
           await this.telegramService.sendMessageToChannel(message);
 
