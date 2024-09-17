@@ -5,17 +5,18 @@ import {
   Body,
   Param,
   Delete,
-  Put,
   Req,
   UseGuards,
   ParseIntPipe,
+  Query,
+  Patch,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { RequestWithUser } from '../types/request-with-user.interface';
-import { Comment } from './comment.entity'; // Assuming you have a Comment entity
+import { Comment } from './comment.entity';
 
 @Controller('comments')
 export class CommentsController {
@@ -32,8 +33,20 @@ export class CommentsController {
   }
 
   @Get()
-  async findAll() {
-    return this.commentsService.findAll();
+  async findAll(
+    @Query('published') published: 'all' | 'published' | 'unpublished' = 'all',
+    @Query('moderated') moderated: 'all' | 'moderated' | 'unmoderated' = 'all',
+    @Query('search') searchTerm: string = '',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.commentsService.findAll(
+      published,
+      moderated,
+      searchTerm,
+      page,
+      limit,
+    );
   }
 
   @Get(':id')
@@ -41,7 +54,8 @@ export class CommentsController {
     return this.commentsService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
+  @UseGuards(AuthGuard('jwt'))
   async update(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() updateCommentDto: UpdateCommentDto,
@@ -50,15 +64,19 @@ export class CommentsController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
   async remove(@Param('id', new ParseIntPipe()) id: number) {
     return this.commentsService.remove(id);
   }
 
   @Get('post/:postId')
   async getCommentsByPostId(
-    @Param('postId', new ParseIntPipe()) postId: number,
+    @Param('postId') postId: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('role') role: string = 'guest',
   ): Promise<Comment[]> {
-    return this.commentsService.findAllByPost(postId);
+    return this.commentsService.findAllByPost(postId, role, page, limit);
   }
 
   @Get('user/:userId')

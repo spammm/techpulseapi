@@ -1,6 +1,4 @@
-import { IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
-import { User } from '../../users/user.entity';
-import { Post } from '../../posts/post.entity';
+import { IsNotEmpty, IsBoolean, IsOptional, IsInt } from 'class-validator';
 
 export class CreateCommentDto {
   @IsNotEmpty()
@@ -11,8 +9,6 @@ export class CreateCommentDto {
   published?: boolean = false;
 
   @IsNotEmpty()
-  user: User;
-
-  @IsNotEmpty()
-  post: Post;
+  @IsInt()
+  postId: number;
 }

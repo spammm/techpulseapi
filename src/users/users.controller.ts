@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -17,7 +18,7 @@ import { User } from './user.entity';
 import { Roles } from '../auth/roles.decorator';
 import { RequestWithUser } from '../types/request-with-user.interface';
 import { AuthService } from '../auth/auth.service';
-import { RegisterDto } from '../auth/dto/register.dto';
+import { AdminRegisterDto } from '../auth/dto/register.dto';
 
 @Controller('users')
 @UseGuards(RolesGuard)
@@ -27,8 +28,14 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
+  @Get('check-username')
+  async checkUsernameExists(@Query('username') username: string) {
+    const exists = await this.usersService.checkUsernameExists(username);
+    return { exists };
+  }
+
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
+  async register(@Body() registerDto: AdminRegisterDto) {
     return this.authService.register(registerDto);
   }
 

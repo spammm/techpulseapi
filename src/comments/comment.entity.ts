@@ -26,6 +26,9 @@ export class Comment {
   @Column({ default: false })
   published: boolean;
 
+  @Column({ default: false })
+  moderated: boolean;
+
   @ManyToOne(() => User, (user) => user.comments, { onDelete: 'CASCADE' })
   user: User;
 

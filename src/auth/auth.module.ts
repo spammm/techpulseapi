@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
 import { CreateAdminService } from './create-admin.service';
+import { ServicesModule } from 'src/services/services.module';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ dotenv.config();
   imports: [
     forwardRef(() => UsersModule),
     PassportModule,
+    ServicesModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default_secret_key',
       signOptions: { expiresIn: '20h' },

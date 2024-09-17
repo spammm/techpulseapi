@@ -21,6 +21,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.VDS_SSH_KEY }}
           SERVER_HOST: ${{ secrets.VDS_HOST }}
           SERVER_USER: ${{ secrets.VDS_USER }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
@@ -29,6 +31,6 @@ jobs:
             cd /var/www/techpulse-api
             git pull origin main
             npm install
-            npm run build  # Собираем проект
+            npm run build
             pm2 restart techpulse-api || pm2 start npm --name 'techpulse-api' -- start
           "

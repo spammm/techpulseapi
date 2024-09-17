@@ -1,33 +1,81 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Comment } from './comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { User } from '../users/user.entity';
+import { Post } from '../posts/post.entity';
 
 @Injectable()
 export class CommentsService {
   constructor(
     @InjectRepository(Comment)
     private readonly commentsRepository: Repository<Comment>,
+
+    @InjectRepository(Post)
+    private readonly postsRepository: Repository<Post>,
   ) {}
 
   async createComment(
     createCommentDto: CreateCommentDto,
     user: User,
   ): Promise<Comment> {
+    const post = await this.postsRepository.findOne({
+      where: { id: createCommentDto.postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException(
+        `Post with ID ${createCommentDto.postId} not found`,
+      );
+    }
+
     const comment = this.commentsRepository.create({
-      ...createCommentDto,
+      content: createCommentDto.content,
       user,
-      published: false,
+      post,
+      published: createCommentDto.published || true,
       createdAt: new Date(),
     });
+
     return this.commentsRepository.save(comment);
   }
 
-  async findAll(): Promise<Comment[]> {
-    return this.commentsRepository.find({ relations: ['user', 'post'] });
+  async findAll(
+    published: 'all' | 'published' | 'unpublished',
+    moderated: 'all' | 'moderated' | 'unmoderated',
+    searchTerm: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<Comment[]> {
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    if (published === 'published') {
+      whereClause.published = true;
+    } else if (published === 'unpublished') {
+      whereClause.published = false;
+    }
+
+    if (moderated === 'moderated') {
+      whereClause.moderated = true;
+    } else if (moderated === 'unmoderated') {
+      whereClause.moderated = false;
+    }
+
+    if (searchTerm) {
+      whereClause.content = ILike(`%${searchTerm}%`);
+    }
+
+    return this.commentsRepository.find({
+      where: whereClause,
+      relations: ['user', 'post'],
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+    });
   }
 
   async findOne(id: number): Promise<Comment> {
@@ -57,10 +105,41 @@ export class CommentsService {
     }
   }
 
-  async findAllByPost(postId: number): Promise<Comment[]> {
+  async findAllByPost(
+    postId: number,
+    userRole?: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<Comment[]> {
+    const skip = (page - 1) * limit;
+
+    const whereClause = {
+      post: { id: postId },
+      ...(userRole !== 'admin' &&
+      userRole !== 'manager' &&
+      userRole !== 'writer'
+        ? { published: true }
+        : {}),
+    };
+
     return this.commentsRepository.find({
-      where: { post: { id: postId } },
+      where: whereClause,
       relations: ['user', 'post'],
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+      select: {
+        user: {
+          id: true,
+          firstName: true,
+          publicAlias: true,
+        },
+        post: {
+          id: true,
+          title: true,
+          url: true,
+        },
+      },
     });
   }
 
