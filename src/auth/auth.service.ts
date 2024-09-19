@@ -199,16 +199,28 @@ export class AuthService {
       sub: user.id,
       role: user.role,
     };
+    // Время жизни accessToken в миллисекундах
+    const accessTokenExpiresIn = 5 * 1000;
+
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '180d' });
     return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: '20h' }),
-      refreshToken: this.jwtService.sign(payload, { expiresIn: '180d' }),
+      accessToken,
+      refreshToken,
+      accessTokenExpiresIn,
     };
   }
 
   async refreshAccessToken(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken);
-      const user = await this.usersService.findByUsername(payload.username);
+      let user: User;
+
+      if (payload.username) {
+        user = await this.usersService.findByUsername(payload.username);
+      } else if (payload.email) {
+        user = await this.usersService.findByEmail(payload.email);
+      }
 
       if (!user) {
         throw new Error('User not found');
@@ -219,7 +231,16 @@ export class AuthService {
         sub: user.id,
         role: user.role,
       };
-      return this.jwtService.sign(newPayload, { expiresIn: '20h' });
+      // Время жизни accessToken в миллисекундах
+      const accessTokenExpiresIn = 5 * 1000;
+      const accessToken = this.jwtService.sign(newPayload, {
+        expiresIn: '5m',
+      });
+      return {
+        accessToken,
+        refreshToken,
+        accessTokenExpiresIn,
+      };
     } catch {
       throw new Error('Invalid refresh token');
     }
@@ -234,11 +255,10 @@ export class AuthService {
     let user = await this.usersService.findByEmail(socialData.email);
 
     if (!user) {
-      // Если пользователя нет, регистрируем его
       user = await this.registerClient({
         email: socialData.email,
-        firstName: socialData.name, // Заполняем firstName через соцсеть
-        password: null, // Пароль можно оставить null или сгенерировать
+        firstName: socialData.name,
+        password: null,
         provider: socialData.provider,
         providerId: socialData.providerId,
       });

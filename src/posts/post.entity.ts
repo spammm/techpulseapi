@@ -103,18 +103,10 @@ export class Post {
   setCreationDates() {
     this.createdAt = new Date();
     this.updatedAt = new Date();
-    if (this.published) {
-      this.publishedAt = new Date();
-    }
-    this.originalPublished = this.published;
   }
 
   @BeforeUpdate()
   updateTimestamp() {
     this.updatedAt = new Date();
-    if (this.published && !this.originalPublished) {
-      this.publishedAt = new Date();
-    }
-    this.originalPublished = this.published;
   }
 }

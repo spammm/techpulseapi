@@ -49,7 +49,7 @@ export class AuthController {
     const newAccessToken = await this.authService.refreshAccessToken(
       body.refreshToken,
     );
-    return { accessToken: newAccessToken };
+    return newAccessToken;
   }
 
   @Post('register')

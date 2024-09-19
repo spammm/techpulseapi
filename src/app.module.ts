@@ -8,6 +8,7 @@ import { RolesGuard } from './auth/roles.guard';
 import { TagsModule } from './tags/tags.module';
 import { CommentsModule } from './comments/comments.module';
 import { PostImageModule } from './post-images/post-image.module';
+import { PostSubscriber } from './posts/post.subscriber';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PostImageModule } from './post-images/post-image.module';
           synchronize: process.env.TYPEORM_SYNC === 'true',
           logging: process.env.TYPEORM_LOGGING === 'true',
           ssl: process.env.DB_SSL === 'true',
+          subscribers: [PostSubscriber],
         };
       },
     }),
