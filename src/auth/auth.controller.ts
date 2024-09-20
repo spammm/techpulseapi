@@ -69,12 +69,23 @@ export class AuthController {
   async socialLogin(
     @Body()
     socialData: {
+      avatar: string;
       email: string;
       name: string;
+      lastName: string;
       provider: string;
       providerId: string;
+      accessToken: string;
     },
   ) {
+    if (!socialData.email && socialData.provider === 'vk') {
+      const userInfo = await this.authService.getUserInfoFromVk(
+        socialData.providerId,
+        socialData.accessToken,
+      );
+      socialData.email = userInfo?.email || '';
+      socialData.name = userInfo?.first_name || socialData.name;
+    }
     return this.authService.handleSocialLogin(socialData);
   }
 

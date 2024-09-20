@@ -1,6 +1,10 @@
 import { IsEmail, IsString, IsOptional, IsIn } from 'class-validator';
 
 export class ClientRegisterDto {
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+
   @IsEmail()
   email: string;
 

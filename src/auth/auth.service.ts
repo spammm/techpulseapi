@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { HttpService } from '@nestjs/axios';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
 import { EmailService } from '../services/email.service';
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly httpService: HttpService,
   ) {}
 
   clientSiteUrl = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -49,8 +51,16 @@ export class AuthService {
   }
 
   async registerClient(registerDto: ClientRegisterDto): Promise<User> {
-    const { email, password, firstName, lastName } = registerDto;
-
+    const {
+      avatar,
+      email,
+      password,
+      firstName,
+      lastName,
+      provider,
+      providerId,
+    } = registerDto;
+    console.log('registerDto:', registerDto);
     // Проверяем, существует ли пользователь с данным email
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
@@ -70,14 +80,18 @@ export class AuthService {
     }
 
     const newUser = await this.usersService.create({
+      avatar,
       email,
       password: hashedPassword,
       role: 'client',
       firstName,
       lastName,
+      provider,
+      providerId,
       //если регистрация через соц сеть, то email считается подтвержденным
       isEmailConfirmed: generatedPassword ? true : false,
     });
+    console.log('newUser:', newUser);
 
     // Отправка email пользователю
     if (generatedPassword) {
@@ -195,13 +209,13 @@ export class AuthService {
 
   async login(user: any) {
     const payload = {
-      username: user.username,
+      username: user.username || user.email,
       sub: user.id,
       role: user.role,
     };
     // Время жизни accessToken в миллисекундах
-    const accessTokenExpiresIn = 5 * 1000;
-
+    const accessTokenExpiresIn = 5 * 60 * 1000;
+    console.log('payload:', payload);
     const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '180d' });
     return {
@@ -215,7 +229,7 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshToken);
       let user: User;
-
+      console.log('payload:', payload);
       if (payload.username) {
         user = await this.usersService.findByUsername(payload.username);
       } else if (payload.email) {
@@ -231,8 +245,9 @@ export class AuthService {
         sub: user.id,
         role: user.role,
       };
+
       // Время жизни accessToken в миллисекундах
-      const accessTokenExpiresIn = 5 * 1000;
+      const accessTokenExpiresIn = 5 * 60 * 1000;
       const accessToken = this.jwtService.sign(newPayload, {
         expiresIn: '5m',
       });
@@ -247,17 +262,22 @@ export class AuthService {
   }
 
   async handleSocialLogin(socialData: {
+    avatar?: string;
     email: string;
     name: string;
+    lastName: string;
     provider: string;
     providerId: string;
+    accessToken?: string;
   }): Promise<{ accessToken: string; refreshToken: string }> {
     let user = await this.usersService.findByEmail(socialData.email);
 
     if (!user) {
       user = await this.registerClient({
+        avatar: socialData.avatar,
         email: socialData.email,
         firstName: socialData.name,
+        lastName: socialData.lastName,
         password: null,
         provider: socialData.provider,
         providerId: socialData.providerId,
@@ -273,5 +293,35 @@ export class AuthService {
     }
 
     return this.login(user);
+  }
+
+  async getUserInfoFromVk(accessToken: string, userId: string): Promise<any> {
+    try {
+      const response = await this.httpService
+        .get('https://api.vk.com/method/users.get', {
+          params: {
+            user_ids: userId,
+            access_token: accessToken,
+            fields: 'email,first_name,last_name',
+            v: '5.131',
+          },
+        })
+        .toPromise();
+
+      if (!response.data.response || !response.data.response[0]) {
+        throw new Error('User not found in VK response');
+      }
+
+      const userData = response.data.response[0];
+      return {
+        email: userData.email || '',
+        firstName: userData.first_name || '',
+        lastName: userData.last_name || '',
+        userId: userData.id || '',
+      };
+    } catch (error) {
+      console.error('Error fetching user info from VK:', error);
+      throw new Error('Error fetching user info from VK');
+    }
   }
 }
