@@ -87,8 +87,6 @@ export class Post {
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
-  private originalPublished: boolean;
-
   @BeforeInsert()
   @BeforeUpdate()
   normalizeTags() {

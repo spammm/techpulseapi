@@ -215,7 +215,6 @@ export class AuthService {
     };
     // Время жизни accessToken в миллисекундах
     const accessTokenExpiresIn = 5 * 60 * 1000;
-    console.log('payload:', payload);
     const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '180d' });
     return {
@@ -229,7 +228,6 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshToken);
       let user: User;
-      console.log('payload:', payload);
       if (payload.username) {
         user = await this.usersService.findByUsername(payload.username);
       } else if (payload.email) {
