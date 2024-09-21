@@ -60,7 +60,7 @@ export class AuthService {
       provider,
       providerId,
     } = registerDto;
-    console.log('registerDto:', registerDto);
+
     // Проверяем, существует ли пользователь с данным email
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
