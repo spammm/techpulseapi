@@ -214,8 +214,8 @@ export class AuthService {
       role: user.role,
     };
     // Время жизни accessToken в миллисекундах
-    const accessTokenExpiresIn = 5 * 60 * 1000;
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
+    const accessTokenExpiresIn = 20 * 60 * 60 * 1000;
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '20h' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '180d' });
     return {
       accessToken,
@@ -245,9 +245,9 @@ export class AuthService {
       };
 
       // Время жизни accessToken в миллисекундах
-      const accessTokenExpiresIn = 5 * 60 * 1000;
+      const accessTokenExpiresIn = 20 * 60 * 60 * 1000;
       const accessToken = this.jwtService.sign(newPayload, {
-        expiresIn: '5m',
+        expiresIn: '20h',
       });
       return {
         accessToken,
