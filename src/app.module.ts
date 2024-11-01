@@ -9,6 +9,7 @@ import { TagsModule } from './tags/tags.module';
 import { CommentsModule } from './comments/comments.module';
 import { PostImageModule } from './post-images/post-image.module';
 import { PostSubscriber } from './posts/post.subscriber';
+import { SourcesModule } from './sources/sources.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PostSubscriber } from './posts/post.subscriber';
     TagsModule,
     CommentsModule,
     PostImageModule,
+    SourcesModule,
   ],
   providers: [
     {
