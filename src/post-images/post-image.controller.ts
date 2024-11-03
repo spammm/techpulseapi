@@ -69,6 +69,7 @@ export class PostImageController {
     @Body('postId') postId: number,
     @Req() req: RequestWithUser,
   ) {
+    const apiUrl = process.env.API_BASE_URL;
     const tmpPath = join(
       __dirname,
       '..',
@@ -124,8 +125,8 @@ export class PostImageController {
       const smallMetadata = await sharp(smallBuffer).metadata();
 
       return this.imageService.create({
-        src: `/${relativePath.replace(/\\/g, '/')}`,
-        smallSrc: `/${smallRelativePath.replace(/\\/g, '/')}`,
+        src: `${apiUrl}/${relativePath.replace(/\\/g, '/')}`,
+        smallSrc: `${apiUrl}/${smallRelativePath.replace(/\\/g, '/')}`,
         alt: file.originalname,
         width: metadata.width,
         height: metadata.height,
