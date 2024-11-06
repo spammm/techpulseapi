@@ -8,6 +8,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
 import { HttpService } from '@nestjs/axios';
 import { GoogleIndexingService } from '../services/google-indexing.service';
+import { YandexIndexingService } from 'src/services/yandex-indexing.service';
 import { TelegramService } from 'src/services/telegram-service';
 
 const clientSiteUrl = process.env.CLIENT_URL;
@@ -19,6 +20,7 @@ export class PostsService {
     private readonly postsRepository: Repository<Post>,
     private readonly httpService: HttpService,
     private readonly googleIndexingService: GoogleIndexingService,
+    private readonly yandexIndexingService: YandexIndexingService,
     private readonly telegramService: TelegramService,
   ) {}
 
@@ -96,12 +98,14 @@ export class PostsService {
     const updatedPostUrl = `${clientSiteUrl}/news/${post.url}`;
 
     if (!wasPublished && updatedPost.published) {
-      await this.triggerSitemapUpdate();
       if (process.env.GOOGLE_PRIVATE_KEY) {
         await this.googleIndexingService.requestGoogleIndexing(
           updatedPostUrl,
           'URL_UPDATED',
         );
+      }
+      if (process.env.YANDEX_INDEX_API_KEY) {
+        await this.yandexIndexingService.requestYandexIndexing(updatedPostUrl);
       }
       await this.triggerSitemapUpdate();
       //telegram
@@ -122,6 +126,7 @@ export class PostsService {
           'URL_DELETED',
         );
       }
+
       //teleram
       if (telegramChatId !== undefined && updatedPost?.telegramMessageId) {
         await this.telegramService.deleteMessageFromChannel(
