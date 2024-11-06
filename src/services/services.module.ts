@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleIndexingService } from './google-indexing.service';
 import { YandexIndexingService } from './yandex-indexing.service';
+import { SitemapService } from './sitemap.service';
 import { TelegramService } from './telegram-service';
 import { EmailService } from './email.service';
 
@@ -10,12 +11,14 @@ import { EmailService } from './email.service';
   providers: [
     GoogleIndexingService,
     YandexIndexingService,
+    SitemapService,
     TelegramService,
     EmailService,
   ],
   exports: [
     GoogleIndexingService,
     YandexIndexingService,
+    SitemapService,
     TelegramService,
     EmailService,
   ],

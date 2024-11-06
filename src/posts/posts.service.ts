@@ -2,14 +2,13 @@ import { slugify } from 'transliteration';
 import { Repository, MoreThan, LessThan, Brackets } from 'typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { lastValueFrom } from 'rxjs';
 import { Post } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
-import { HttpService } from '@nestjs/axios';
 import { GoogleIndexingService } from '../services/google-indexing.service';
-import { YandexIndexingService } from 'src/services/yandex-indexing.service';
-import { TelegramService } from 'src/services/telegram-service';
+import { YandexIndexingService } from '../services/yandex-indexing.service';
+import { SitemapService } from '../services/sitemap.service';
+import { TelegramService } from '../services/telegram-service';
 
 const clientSiteUrl = process.env.CLIENT_URL;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
@@ -18,9 +17,9 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
-    private readonly httpService: HttpService,
     private readonly googleIndexingService: GoogleIndexingService,
     private readonly yandexIndexingService: YandexIndexingService,
+    private readonly sitemapService: SitemapService,
     private readonly telegramService: TelegramService,
   ) {}
 
@@ -46,35 +45,6 @@ export class PostsService {
     });
 
     return createdPost;
-  }
-
-  private async triggerSitemapUpdate() {
-    try {
-      const response = await lastValueFrom(
-        this.httpService.get(
-          `${process.env.CLIENT_URL}/api/clear-sitemap-cache`,
-          {
-            headers: {
-              'x-sitemap-secret': process.env.SITEMAP_SECRET,
-            },
-          },
-        ),
-      );
-      console.log('Sitemap cache cleared successfully', response.data);
-
-      if (!process.env.CLIENT_URL.includes('localhost')) {
-        const yandexPingUrl = `https://webmaster.yandex.ru/ping?sitemap=${process.env.CLIENT_URL}/sitemap.xml`;
-        const yandexPingResponse = await lastValueFrom(
-          this.httpService.get(yandexPingUrl),
-        );
-        console.log('Yandex ping successful', yandexPingResponse.data);
-      }
-    } catch (error) {
-      console.error(
-        'Failed to clear sitemap cache or send index request',
-        error,
-      );
-    }
   }
 
   async delete(id: string): Promise<void> {
@@ -107,7 +77,9 @@ export class PostsService {
       if (process.env.YANDEX_INDEX_API_KEY) {
         await this.yandexIndexingService.requestYandexIndexing(updatedPostUrl);
       }
-      await this.triggerSitemapUpdate();
+
+      await this.sitemapService.triggerSitemapUpdate();
+
       //telegram
       if (telegramChatId !== undefined) {
         const message = `<b>${updatedPost.title}</b>\n${updatedPost.subtitle || ''}\n\nЧитать полностью:\n${clientSiteUrl}/news/${updatedPost.url}`;
@@ -119,7 +91,8 @@ export class PostsService {
         await this.postsRepository.save(updatedPost);
       }
     } else if (wasPublished && !updatedPost.published) {
-      await this.triggerSitemapUpdate();
+      await this.sitemapService.triggerSitemapUpdate();
+
       if (process.env.GOOGLE_PRIVATE_KEY) {
         await this.googleIndexingService.requestGoogleIndexing(
           updatedPostUrl,
