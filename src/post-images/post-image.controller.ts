@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -139,5 +140,11 @@ export class PostImageController {
       console.error('Error processing image:', error);
       throw new Error('Error processing image');
     }
+  }
+
+  @Delete('delete-by-post/:postId')
+  async deleteImagesByPostId(@Param('postId') postId: string) {
+    await this.imageService.deleteByPostId(postId);
+    return { message: 'Images successfully deleted' };
   }
 }

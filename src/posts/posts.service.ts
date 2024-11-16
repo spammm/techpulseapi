@@ -3,6 +3,7 @@ import { Repository, MoreThan, LessThan, Brackets } from 'typeorm';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './post.entity';
+import { PostImageService } from '../post-images/post-image.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { User } from '../users/user.entity';
 import { GoogleIndexingService } from '../services/google-indexing.service';
@@ -17,6 +18,7 @@ export class PostsService {
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
+    private readonly imageRepository: PostImageService,
     private readonly googleIndexingService: GoogleIndexingService,
     private readonly yandexIndexingService: YandexIndexingService,
     private readonly sitemapService: SitemapService,
@@ -47,10 +49,11 @@ export class PostsService {
     return createdPost;
   }
 
-  async delete(id: string): Promise<void> {
-    const result = await this.postsRepository.delete(id);
+  async delete(postId: string): Promise<void> {
+    await this.imageRepository.deleteByPostId(postId);
+    const result = await this.postsRepository.delete(postId);
     if (result.affected === 0) {
-      throw new NotFoundException(`Post with ID ${id} not found`);
+      throw new NotFoundException(`Post with ID ${postId} not found`);
     }
   }
 

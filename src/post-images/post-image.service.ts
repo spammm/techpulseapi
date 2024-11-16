@@ -36,4 +36,16 @@ export class PostImageService {
     const image = this.imageRepository.create(imageData);
     return this.imageRepository.save(image);
   }
+
+  async deleteByPostId(postId: string): Promise<void> {
+    const images = await this.imageRepository.find({
+      where: { post: { id: parseInt(postId, 10) } },
+    });
+
+    if (images.length === 0) {
+      throw new NotFoundException(`No images found for post with ID ${postId}`);
+    }
+
+    await this.imageRepository.remove(images);
+  }
 }
