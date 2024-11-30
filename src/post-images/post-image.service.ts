@@ -122,24 +122,19 @@ export class PostImageService {
     const tmpPath = this.getTempFilePath(file.filename);
     const hashName = uuidv4();
     const newFileName = `${hashName}.gif`;
-    const smallFileName = `${hashName}_small.gif`;
     const outputDir = this.getOutputDir();
     const outputPath = join(outputDir, newFileName);
-    const smallOutputPath = join(outputDir, smallFileName);
 
     try {
       await this.prepareDirectory(outputDir);
 
       await fs.copyFile(tmpPath, outputPath);
-      await fs.copyFile(tmpPath, smallOutputPath);
 
       await fs.unlink(tmpPath);
 
       const relativePath = `uploads/images/${newFileName}`;
-      const smallRelativePath = `uploads/images/${smallFileName}`;
 
       const metadata = await sharp(outputPath).metadata();
-      const smallMetadata = await sharp(smallOutputPath).metadata();
 
       return this.saveImage(
         file,
@@ -147,9 +142,9 @@ export class PostImageService {
         postId,
         user,
         relativePath,
-        smallRelativePath,
+        relativePath,
         metadata,
-        smallMetadata,
+        metadata,
       );
     } catch (error) {
       console.error('Error processing GIF image:', error);
