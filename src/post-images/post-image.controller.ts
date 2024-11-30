@@ -17,11 +17,8 @@ import { RequestWithUser } from '../types/request-with-user.interface';
 import { diskStorage } from 'multer';
 import { join, extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import * as sharp from 'sharp';
-import * as fs from 'fs/promises';
 import { UpdateImageDto } from './dto/create-post-image.dto';
 import { PostImageService } from './post-image.service';
-import { Post } from '../posts/post.entity';
 
 @Controller('images')
 export class PostImageController {
@@ -71,74 +68,11 @@ export class PostImageController {
     @Req() req: RequestWithUser,
   ) {
     const apiUrl = process.env.API_BASE_URL;
-    const tmpPath = join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'uploads',
-      'tmp',
-      file.filename,
-    );
 
-    const hashName = uuidv4();
-    const newFileName = `${hashName}.webp`;
-    const smallFileName = `${hashName}_small.webp`;
-    const outputDir = join(__dirname, '..', '..', '..', 'uploads', 'images');
-    const outputPath = join(outputDir, newFileName);
-    const smallOutputPath = join(outputDir, smallFileName);
-
-    try {
-      await fs.mkdir(outputDir, { recursive: true });
-      const image = sharp(tmpPath);
-      const metadata = await image.metadata();
-
-      sharp.cache(false);
-
-      // Создание большой версии изображения
-      const buffer = await image
-        .resize({
-          width: metadata.width > 1920 ? 1920 : undefined,
-          height: metadata.height > 1080 ? 1080 : undefined,
-          fit: 'inside',
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
-
-      await fs.writeFile(outputPath, buffer);
-
-      // Создание маленькой версии изображения
-      const smallBuffer = await image
-        .resize({
-          width: metadata.width > 640 ? 640 : undefined,
-          height: metadata.height > 480 ? 480 : undefined,
-          fit: 'inside',
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
-
-      await fs.writeFile(smallOutputPath, smallBuffer);
-      await fs.unlink(tmpPath);
-
-      const relativePath = `uploads/images/${newFileName}`;
-      const smallRelativePath = `uploads/images/${smallFileName}`;
-
-      const smallMetadata = await sharp(smallBuffer).metadata();
-
-      return this.imageService.create({
-        src: `${apiUrl}/${relativePath.replace(/\\/g, '/')}`,
-        smallSrc: `${apiUrl}/${smallRelativePath.replace(/\\/g, '/')}`,
-        alt: file.originalname,
-        width: metadata.width,
-        height: metadata.height,
-        smallWidth: smallMetadata.width,
-        smallHeight: smallMetadata.height,
-        owner: req.user,
-        post: { id: postId } as Post,
-      });
-    } catch (error) {
-      console.error('Error processing image:', error);
-      throw new Error('Error processing image');
+    if (extname(file.originalname).toLowerCase() === '.gif') {
+      return this.imageService.uploadGifImage(file, postId, apiUrl, req.user);
+    } else {
+      return this.imageService.processImage(file, postId, apiUrl, req.user);
     }
   }
 
