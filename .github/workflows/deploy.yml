@@ -34,7 +34,10 @@ jobs:
             cd /var/www/techpulse-api
             git fetch origin main
             git reset --hard origin/main
+            node -v
+            npm -v
             npm ci
             npm run build
+            pm2 update
             pm2 restart techpulse-api --update-env || pm2 start npm --name 'techpulse-api' -- start
           REMOTE
