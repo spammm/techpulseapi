@@ -13,10 +13,17 @@ export class GoogleIndexingService {
     this.auth = new GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/gm, '\n'),
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/gm, '\n'),
       },
       scopes: ['https://www.googleapis.com/auth/indexing'],
     });
+  }
+
+  private shouldSendIndexingRequests(): boolean {
+    return (
+      process.env.PUBLICATION_INTEGRATIONS_ENABLED === 'true' ||
+      process.env.NODE_ENV === 'production'
+    );
   }
 
   private async getAccessToken() {
@@ -29,6 +36,14 @@ export class GoogleIndexingService {
     url: string,
     type: googleRequesType = 'URL_UPDATED',
   ) {
+    if (!this.shouldSendIndexingRequests()) {
+      console.log('Skipping Google indexing outside production:', {
+        url,
+        type,
+      });
+      return;
+    }
+
     try {
       const token = await this.getAccessToken();
       const googleIndexingApiUrl =
@@ -38,20 +53,15 @@ export class GoogleIndexingService {
         url,
         type,
       };
-      const isProduction = !process.env.CLIENT_URL.includes('localhost');
-      if (isProduction) {
-        const response = await firstValueFrom(
-          this.httpService.post(googleIndexingApiUrl, requestBody, {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-        );
-        console.log('Google Indexing API response:', response.data);
-      } else {
-        console.log('Fake send indexing: ', requestBody);
-      }
+      const response = await firstValueFrom(
+        this.httpService.post(googleIndexingApiUrl, requestBody, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      );
+      console.log('Google Indexing API response:', response.data);
     } catch (error) {
       console.error('Failed to send request to Google Indexing API', error);
     }

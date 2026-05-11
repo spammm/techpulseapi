@@ -6,8 +6,19 @@ import { lastValueFrom } from 'rxjs';
 export class SitemapService {
   constructor(private readonly httpService: HttpService) {}
 
+  private shouldSendSitemapRequests(): boolean {
+    return (
+      process.env.PUBLICATION_INTEGRATIONS_ENABLED === 'true' ||
+      process.env.NODE_ENV === 'production'
+    );
+  }
+
   async triggerSitemapUpdate() {
-    const isDevelopment = process.env.CLIENT_URL.includes('localhost');
+    if (!this.shouldSendSitemapRequests()) {
+      console.log('Skipping sitemap requests outside production');
+      return;
+    }
+
     try {
       // Очистка кэша sitemap
       const response = await lastValueFrom(
@@ -22,12 +33,8 @@ export class SitemapService {
       );
       console.log('Sitemap cache cleared successfully', response.data);
 
-      if (!isDevelopment) {
-        await this.pingYandex();
-        console.log('Yandex ping sent successfully');
-      } else {
-        console.log('Skipping Yandex ping for local development');
-      }
+      await this.pingYandex();
+      console.log('Yandex ping sent successfully');
     } catch (error) {
       console.error(
         'Failed to clear sitemap cache or send index request',

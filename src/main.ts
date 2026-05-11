@@ -9,9 +9,12 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  const clientUrl = process.env.CLIENT_URL || process.env.CORS_CLIENT_URL;
+  const adminUrl = process.env.ADMIN_URL || process.env.CORS_ADMIN_URL;
+
   app.enableCors({
     exposedHeaders: ['X-Total-Count'],
-    origin: [process.env.CLIENT_URL, process.env.ADMIN_URL],
+    origin: [clientUrl, adminUrl].filter(Boolean),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
@@ -24,7 +27,9 @@ async function bootstrap() {
         'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       );
       res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
+      if (clientUrl) {
+        res.header('Access-Control-Allow-Origin', clientUrl);
+      }
       res.sendStatus(204);
     } else {
       next();
@@ -35,6 +40,6 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  await app.listen(9000);
+  await app.listen(parseInt(process.env.PORT, 10) || 9000);
 }
 bootstrap();

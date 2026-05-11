@@ -11,8 +11,6 @@ import { YandexIndexingService } from '../services/yandex-indexing.service';
 import { SitemapService } from '../services/sitemap.service';
 import { TelegramService } from '../services/telegram-service';
 
-const clientSiteUrl = process.env.CLIENT_URL;
-const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 @Injectable()
 export class PostsService {
   constructor(
@@ -24,6 +22,36 @@ export class PostsService {
     private readonly sitemapService: SitemapService,
     private readonly telegramService: TelegramService,
   ) {}
+
+  private shouldRunPublicationIntegrations(): boolean {
+    return (
+      process.env.PUBLICATION_INTEGRATIONS_ENABLED === 'true' ||
+      process.env.NODE_ENV === 'production'
+    );
+  }
+
+  private queueTelegramPublish(post: Post, message: string): void {
+    this.telegramService
+      .sendMessageToChannel(message)
+      .then(async (messageId) => {
+        if (!messageId) {
+          return;
+        }
+
+        await this.postsRepository.update(post.id, {
+          telegramMessageId: messageId,
+        });
+      })
+      .catch((error) => {
+        console.warn('Telegram publish skipped or failed:', error);
+      });
+  }
+
+  private queueTelegramDelete(messageId: number): void {
+    this.telegramService.deleteMessageFromChannel(messageId).catch((error) => {
+      console.warn('Telegram delete skipped or failed:', error);
+    });
+  }
 
   async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
     let url = slugify(createPostDto.title);
@@ -68,46 +96,47 @@ export class PostsService {
 
     Object.assign(post, updatePostDto);
     const updatedPost = await this.postsRepository.save(post);
+    const clientSiteUrl = process.env.CLIENT_URL || process.env.CORS_CLIENT_URL;
     const updatedPostUrl = `${clientSiteUrl}/news/${post.url}`;
+    const shouldRunIntegrations = this.shouldRunPublicationIntegrations();
 
     if (!wasPublished && updatedPost.published) {
-      if (process.env.GOOGLE_PRIVATE_KEY) {
+      if (shouldRunIntegrations && process.env.GOOGLE_PRIVATE_KEY) {
         await this.googleIndexingService.requestGoogleIndexing(
           updatedPostUrl,
           'URL_UPDATED',
         );
       }
-      if (process.env.YANDEX_INDEX_API_KEY) {
+      if (shouldRunIntegrations && process.env.YANDEX_INDEX_API_KEY) {
         await this.yandexIndexingService.requestYandexIndexing(updatedPostUrl);
       }
 
-      await this.sitemapService.triggerSitemapUpdate();
+      if (shouldRunIntegrations) {
+        await this.sitemapService.triggerSitemapUpdate();
+      }
 
-      //telegram
-      if (telegramChatId !== undefined) {
+      if (shouldRunIntegrations && process.env.TELEGRAM_CHAT_ID) {
         const message = `<b>${updatedPost.title}</b>\n${updatedPost.subtitle || ''}\n\nЧитать полностью:\n${clientSiteUrl}/news/${updatedPost.url}`;
-        const messageId =
-          await this.telegramService.sendMessageToChannel(message);
-
-        Object.assign(updatedPost, updatePostDto);
-        updatedPost.telegramMessageId = messageId;
-        await this.postsRepository.save(updatedPost);
+        this.queueTelegramPublish(updatedPost, message);
       }
     } else if (wasPublished && !updatedPost.published) {
-      await this.sitemapService.triggerSitemapUpdate();
+      if (shouldRunIntegrations) {
+        await this.sitemapService.triggerSitemapUpdate();
+      }
 
-      if (process.env.GOOGLE_PRIVATE_KEY) {
+      if (shouldRunIntegrations && process.env.GOOGLE_PRIVATE_KEY) {
         await this.googleIndexingService.requestGoogleIndexing(
           updatedPostUrl,
           'URL_DELETED',
         );
       }
 
-      //teleram
-      if (telegramChatId !== undefined && updatedPost?.telegramMessageId) {
-        await this.telegramService.deleteMessageFromChannel(
-          updatedPost.telegramMessageId,
-        );
+      if (
+        shouldRunIntegrations &&
+        process.env.TELEGRAM_CHAT_ID &&
+        updatedPost?.telegramMessageId
+      ) {
+        this.queueTelegramDelete(updatedPost.telegramMessageId);
       }
     }
 

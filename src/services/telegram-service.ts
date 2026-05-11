@@ -9,7 +9,19 @@ export class TelegramService {
 
   constructor(private readonly httpService: HttpService) {}
 
+  private shouldSendTelegramRequests(): boolean {
+    return (
+      process.env.PUBLICATION_INTEGRATIONS_ENABLED === 'true' ||
+      process.env.NODE_ENV === 'production'
+    );
+  }
+
   async sendMessageToChannel(message: string): Promise<number> {
+    if (!this.shouldSendTelegramRequests()) {
+      console.log('Skipping Telegram message outside production');
+      return null;
+    }
+
     try {
       const response = await lastValueFrom(
         this.httpService.post(
@@ -26,12 +38,17 @@ export class TelegramService {
       console.log(`Post ${messageId} published in teleram`);
       return messageId;
     } catch (error) {
-      console.error('Error sending message to Telegram:', error);
-      throw error;
+      console.warn('Telegram message was not sent:', error);
+      return null;
     }
   }
 
   async deleteMessageFromChannel(messageId: number): Promise<void> {
+    if (!this.shouldSendTelegramRequests()) {
+      console.log('Skipping Telegram delete outside production');
+      return;
+    }
+
     try {
       await lastValueFrom(
         this.httpService.post(
@@ -44,12 +61,16 @@ export class TelegramService {
       );
       console.log(`Post ${messageId} removed in Telegram`);
     } catch (error) {
-      console.error('Error deleting message from Telegram:', error);
-      throw error;
+      console.warn('Telegram message was not deleted:', error);
     }
   }
 
   async sendPhotoToChannel(photoUrl: string, caption: string): Promise<number> {
+    if (!this.shouldSendTelegramRequests()) {
+      console.log('Skipping Telegram photo outside production');
+      return null;
+    }
+
     try {
       const response = await lastValueFrom(
         this.httpService.post(
@@ -65,8 +86,8 @@ export class TelegramService {
 
       return response.data.result.message_id;
     } catch (error) {
-      console.error('Error sending photo to Telegram:', error);
-      throw error;
+      console.warn('Telegram photo was not sent:', error);
+      return null;
     }
   }
 }

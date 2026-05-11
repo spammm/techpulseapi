@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
 import { ClientRegisterDto, AdminRegisterDto } from './dto/register.dto';
 import { RolesGuard } from './roles.guard';
 import { ClientLoginDto, LoginDto } from './dto/login.dto';
-import { TokenExpiredException } from 'src/exceptions/token-expired.exception';
+import { TokenExpiredException } from '../exceptions/token-expired.exception';
 
 @Controller('auth')
 export class AuthController {

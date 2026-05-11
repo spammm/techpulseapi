@@ -10,6 +10,13 @@ export class YandexIndexingService {
     this.yandexApiKey = process.env.YANDEX_INDEX_API_KEY;
   }
 
+  private shouldSendIndexingRequests(): boolean {
+    return (
+      process.env.PUBLICATION_INTEGRATIONS_ENABLED === 'true' ||
+      process.env.NODE_ENV === 'production'
+    );
+  }
+
   private isValidUrl(url: string): boolean {
     try {
       new URL(url);
@@ -20,6 +27,11 @@ export class YandexIndexingService {
   }
 
   async requestYandexIndexing(url: string) {
+    if (!this.shouldSendIndexingRequests()) {
+      console.log('Skipping Yandex indexing outside production:', { url });
+      return;
+    }
+
     if (!this.isValidUrl(url)) {
       console.error('Invalid URL format:', url);
       return;
@@ -33,15 +45,10 @@ export class YandexIndexingService {
         key: this.yandexApiKey,
       };
 
-      const isProduction = !process.env.CLIENT_URL.includes('localhost');
-      if (isProduction) {
-        const response = await firstValueFrom(
-          this.httpService.get(yandexIndexingApiUrl, { params }),
-        );
-        console.log('Yandex Indexing API response:', response.data);
-      } else {
-        console.log('Fake send indexing:', params);
-      }
+      const response = await firstValueFrom(
+        this.httpService.get(yandexIndexingApiUrl, { params }),
+      );
+      console.log('Yandex Indexing API response:', response.data);
     } catch (error) {
       console.error('Failed to send request to Yandex Indexing API', error);
     }

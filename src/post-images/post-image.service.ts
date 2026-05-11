@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import * as fs from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -190,9 +190,13 @@ export class PostImageService {
     metadata: sharp.Metadata,
     smallMetadata: sharp.Metadata,
   ): Promise<PostImage> {
+    const normalizedApiUrl = apiUrl?.replace(/\/$/, '') || '';
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+    const normalizedSmallPath = smallRelativePath.replace(/\\/g, '/');
+
     return this.imageRepository.save({
-      src: `${apiUrl}/${relativePath.replace(/\\/g, '/')}`,
-      smallSrc: `${apiUrl}/${smallRelativePath.replace(/\\/g, '/')}`,
+      src: `${normalizedApiUrl}/${normalizedPath}`,
+      smallSrc: `${normalizedApiUrl}/${normalizedSmallPath}`,
       alt: file.originalname,
       width: metadata.width,
       height: metadata.height,

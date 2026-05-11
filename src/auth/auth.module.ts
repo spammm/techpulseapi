@@ -8,7 +8,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
 import { CreateAdminService } from './create-admin.service';
-import { ServicesModule } from 'src/services/services.module';
+import { ServicesModule } from '../services/services.module';
 
 dotenv.config();
 

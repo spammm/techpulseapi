@@ -126,7 +126,7 @@ export class AuthService {
       user.isEmailConfirmed = true;
       await this.usersService.update(user.id, user);
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
         throw new TokenExpiredException('TokenExpiredError', payload.email);
       } else {
         throw new Error('Невалидный токен');

@@ -24,6 +24,19 @@ import { PostImageService } from './post-image.service';
 export class PostImageController {
   constructor(private readonly imageService: PostImageService) {}
 
+  private getApiBaseUrl(req: RequestWithUser): string {
+    if (process.env.API_BASE_URL) {
+      return process.env.API_BASE_URL.replace(/\/$/, '');
+    }
+
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol = Array.isArray(forwardedProto)
+      ? forwardedProto[0]
+      : forwardedProto || req.protocol;
+
+    return `${protocol}://${req.get('host')}`;
+  }
+
   @Get('/post/:postId')
   async getImagesByPostId(@Param('postId') postId: number) {
     return this.imageService.findByPostId(postId);
@@ -67,7 +80,7 @@ export class PostImageController {
     @Body('postId') postId: number,
     @Req() req: RequestWithUser,
   ) {
-    const apiUrl = process.env.API_BASE_URL;
+    const apiUrl = this.getApiBaseUrl(req);
 
     if (extname(file.originalname).toLowerCase() === '.gif') {
       return this.imageService.uploadGifImage(file, postId, apiUrl, req.user);
