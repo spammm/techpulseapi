@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import sharp from 'sharp';
 import * as fs from 'fs/promises';
 import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
 import { PostImage } from './post-image.entity';
 import { UpdateImageDto } from './dto/create-post-image.dto';
@@ -61,7 +61,7 @@ export class PostImageService {
     user: any,
   ): Promise<PostImage> {
     const tmpPath = this.getTempFilePath(file.filename);
-    const hashName = uuidv4();
+    const hashName = randomUUID();
     const newFileName = `${hashName}.webp`;
     const smallFileName = `${hashName}_small.webp`;
     const outputDir = this.getOutputDir();
@@ -120,7 +120,7 @@ export class PostImageService {
     user: any,
   ): Promise<PostImage> {
     const tmpPath = this.getTempFilePath(file.filename);
-    const hashName = uuidv4();
+    const hashName = randomUUID();
     const newFileName = `${hashName}.gif`;
     const outputDir = this.getOutputDir();
     const outputPath = join(outputDir, newFileName);

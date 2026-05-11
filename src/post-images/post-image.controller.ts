@@ -16,7 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RequestWithUser } from '../types/request-with-user.interface';
 import { diskStorage } from 'multer';
 import { join, extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { UpdateImageDto } from './dto/create-post-image.dto';
 import { PostImageService } from './post-image.service';
 
@@ -58,7 +58,7 @@ export class PostImageController {
       storage: diskStorage({
         destination: join(__dirname, '..', '..', '..', 'uploads', 'tmp'),
         filename: (req, file, cb) => {
-          const uniqueSuffix = `${uuidv4()}${extname(file.originalname)}`;
+          const uniqueSuffix = `${randomUUID()}${extname(file.originalname)}`;
           cb(null, uniqueSuffix);
         },
       }),
