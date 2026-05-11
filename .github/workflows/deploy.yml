@@ -25,13 +25,16 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           NODE_ENV: production
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "
+          ssh -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_HOST" 'bash -se' <<'REMOTE'
+            set -euo pipefail
             cd /var/www/techpulse-api
-            git pull origin main
-            npm install
+            git fetch origin main
+            git reset --hard origin/main
+            npm ci
             npm run build
-            pm2 restart techpulse-api || pm2 start npm --name 'techpulse-api' -- start
-          "
+            pm2 restart techpulse-api --update-env || pm2 start npm --name 'techpulse-api' -- start
+          REMOTE
